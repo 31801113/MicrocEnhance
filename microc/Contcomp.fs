@@ -195,6 +195,11 @@ let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr 
       let (jumptest, C1) = 
            makeJump (cExpr e varEnv funEnv (IFNZRO labbegin :: C))
       addJump jumptest (Label labbegin :: cStmt body varEnv funEnv C1)
+    | DoWhile(stmt, expr) ->
+      let labbegin = newLabel()
+      let (jumptest, C1) = 
+           makeJump (cExpr expr varEnv funEnv (IFNZRO labbegin :: C))
+      addJump jumptest (Label labbegin :: cStmt stmt varEnv funEnv C1)
     | Expr e -> 
       cExpr e varEnv funEnv (addINCSP -1 C) 
     | Block stmts -> 
