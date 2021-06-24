@@ -12,6 +12,7 @@ module Absyn
 // 这里没有函数类型，注意与上次课的 MicroML 对比
 type typ =
   | TypI                             (* Type int                    *)
+  | TypF                             (* Type float                 *)
   | TypC                             (* Type char                   *)
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
@@ -21,6 +22,7 @@ and expr =                           // 表达式，右值
   | Assign of access * expr          (* x=e  or  *p=e  or  a[e]=e   *)
   | Addr of access                   (* &x   or  &*p   or  &a[e]    *)
   | CstI of int                      (* Constant                    *)
+  | ConstFloat of float32                   (* Constant                    *)
   | Prim1 of string * expr           (* Unary primitive operator    *)
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)
   | Andalso of expr * expr           (* Sequential and              *)
