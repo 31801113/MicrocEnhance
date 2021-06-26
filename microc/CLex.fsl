@@ -22,6 +22,7 @@ let keyword s =
     | "false"   -> CSTBOOL 0
     | "if"      -> IF
     | "int"     -> INT
+    | "float"   -> FLOAT
     | "null"    -> NULL
     | "print"   -> PRINT
     | "println" -> PRINTLN
