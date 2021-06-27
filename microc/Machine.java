@@ -14,6 +14,7 @@
 
 import java.io.*;
 import java.util.*;
+import java.lang.*;
 
 class Machine {
   public static void main(String[] args)        
@@ -46,7 +47,7 @@ class Machine {
   static void execute(String[] args, boolean trace) 
     throws FileNotFoundException, IOException {
     int[] p = readfile(args[0]);                // Read the program from file
-    int[] s = new int[STACKSIZE];               // The evaluation stack
+    Object[] s = new Object[STACKSIZE];               // The evaluation stack
     int[] iargs = new int[args.length-1];
     for (int i=1; i<args.length; i++)           // Push commandline arguments
       iargs[i-1] = Integer.parseInt(args[i]);
@@ -58,7 +59,7 @@ class Machine {
 
   // The machine: execute the code starting at p[pc] 
 
-  static int execcode(int[] p, int[] s, int[] iargs, boolean trace) {
+  static int execcode(int[] p, Object[] s, int[] iargs, boolean trace) {
     int bp = -999;	// Base pointer, for local variable access 
     int sp = -1;	// Stack top pointer
     int pc = 0;		// Program counter: next instruction
@@ -69,29 +70,29 @@ class Machine {
       case CSTI:
         s[sp+1] = p[pc++]; sp++; break;
       case ADD: 
-        s[sp-1] = s[sp-1] + s[sp]; sp--; break;
+        s[sp-1] = Integer.parseInt(String.valueOf(s[sp-1])) + Integer.parseInt(String.valueOf(s[sp])); sp--; break;
       case SUB: 
-        s[sp-1] = s[sp-1] - s[sp]; sp--; break;
+        s[sp-1] = Integer.parseInt(String.valueOf(s[sp-1])) - Integer.parseInt(String.valueOf(s[sp])); sp--; break;
       case MUL: 
-        s[sp-1] = s[sp-1] * s[sp]; sp--; break;
+        s[sp-1] = Integer.parseInt(String.valueOf(s[sp-1])) * Integer.parseInt(String.valueOf(s[sp])); sp--; break;
       case DIV: 
-        s[sp-1] = s[sp-1] / s[sp]; sp--; break;
+        s[sp-1] = Integer.parseInt(String.valueOf(s[sp-1])) / Integer.parseInt(String.valueOf(s[sp])); sp--; break;
       case MOD: 
-        s[sp-1] = s[sp-1] % s[sp]; sp--; break;
+        s[sp-1] = Integer.parseInt(String.valueOf(s[sp-1])) % Integer.parseInt(String.valueOf(s[sp])); sp--; break;
       case EQ: 
-        s[sp-1] = (s[sp-1] == s[sp] ? 1 : 0); sp--; break;
+        s[sp-1] = (Integer.parseInt(String.valueOf(s[sp-1])) == Integer.parseInt(String.valueOf(s[sp])) ? 1 : 0); sp--; break;
       case LT: 
-        s[sp-1] = (s[sp-1] < s[sp] ? 1 : 0); sp--; break;
+        s[sp-1] = (Integer.parseInt(String.valueOf(s[sp-1])) < Integer.parseInt(String.valueOf(s[sp])) ? 1 : 0); sp--; break;
       case NOT: 
-        s[sp] = (s[sp] == 0 ? 1 : 0); break;
+        s[sp] = (Integer.parseInt(String.valueOf(s[sp])) == 0 ? 1 : 0); break;
       case DUP: 
         s[sp+1] = s[sp]; sp++; break;
       case SWAP: 
-        { int tmp = s[sp];  s[sp] = s[sp-1];  s[sp-1] = tmp; } break; 
+        { Object tmp = s[sp];  s[sp] = s[sp-1];  s[sp-1] = tmp; } break; 
       case LDI:                 // load indirect
-        s[sp] = s[s[sp]]; break;
+        s[sp] = s[Integer.parseInt(String.valueOf(s[sp]))]; break;
       case STI:                 // store indirect, keep value on top
-        s[s[sp-1]] = s[sp]; s[sp-1] = s[sp]; sp--; break;
+        s[Integer.parseInt(String.valueOf(s[sp-1]))] = s[sp]; s[sp-1] = s[sp]; sp--; break;
       case GETBP:
         s[sp+1] = bp; sp++; break;
       case GETSP:
@@ -101,9 +102,9 @@ class Machine {
       case GOTO:
         pc = p[pc]; break;
       case IFZERO:
-        pc = (s[sp--] == 0 ? p[pc] : pc+1); break;
+        pc = (Integer.parseInt(String.valueOf(s[sp--])) == 0 ? p[pc] : pc+1); break;
       case IFNZRO:
-        pc = (s[sp--] != 0 ? p[pc] : pc+1); break;
+        pc = (Integer.parseInt(String.valueOf(s[sp--])) != 0 ? p[pc] : pc+1); break;
       case CALL: { 
         int argc = p[pc++];
         for (int i=0; i<argc; i++)	   // Make room for return address
@@ -121,9 +122,9 @@ class Machine {
         sp = sp - pop; pc = p[pc]; 
       } break; 
       case RET: { 
-        int res = s[sp]; 
-        sp = sp-p[pc]; bp = s[--sp]; pc = s[--sp]; 
-        s[sp] = res; 
+        Object res = s[sp]; 
+        sp = sp-p[pc]; bp = Integer.parseInt(String.valueOf(s[--sp])); pc = Integer.parseInt(String.valueOf(s[--sp])); 
+        s[sp] = res;
       } break; 
       case PRINTI:
         System.out.print(s[sp] + " "); break; 
@@ -136,7 +137,7 @@ class Machine {
       case STOP:
         return sp;
       case CSTF:
-        s[sp+1] = p[pc++]; sp++; break;
+        s[sp+1] = new Float(Float.intBitsToFloat(p[pc++])); sp++; break;
       default:                  
         throw new RuntimeException("Illegal instruction " + p[pc-1] 
                                    + " at address " + (pc-1));
@@ -180,10 +181,10 @@ class Machine {
 
   // Print current stack and current instruction
 
-  static void printsppc(int[] s, int bp, int sp, int[] p, int pc) {
+  static void printsppc(Object[] s, int bp, int sp, int[] p, int pc) {
     System.out.print("[ ");
     for (int i=0; i<=sp; i++)
-      System.out.print(s[i] + " ");
+      System.out.print(Integer.parseInt(String.valueOf(s[i])) + " ");
     System.out.print("]");
     System.out.println("{" + pc + ": " + insname(p, pc) + "}"); 
   }
