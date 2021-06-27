@@ -15,17 +15,19 @@ let nl = CstI 10 //  \n 的 ASCII 码
 %}
 
 %token <int> CSTINT CSTBOOL  // <int> 是词元的语义值类型
+%token <float32> CSTFLOAT
 %token <string> CSTSTRING NAME
 
-%token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE DO
+%token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE DO FLOAT SWITCH CASE
 %token PLUS MINUS TIMES DIV MOD
 %token EQ NE GT LT GE LE
 %token NOT SEQOR SEQAND
-%token LPAR RPAR LBRACE RBRACE LBRACK RBRACK SEMI COMMA ASSIGN AMP
+%token LPAR RPAR LBRACE RBRACE LBRACK RBRACK SEMI COMMA ASSIGN AMP COLON
 %token EOF
 
 %right ASSIGN             /* lowest precedence */  // 最下面的优先级最高
 %nonassoc PRINT
+%right COLON
 %left SEQOR
 %left SEQAND
 %left EQ NE 
@@ -137,6 +139,7 @@ StmtM:  /* No unbalanced if-else */
   | IF LPAR Expr RPAR StmtM ELSE StmtM  { If($3, $5, $7)       }
   | WHILE LPAR Expr RPAR StmtM          { While($3, $5)        }
   | DO StmtM WHILE LPAR Expr RPAR       { DoWhile($2, $5)      }
+  | SWITCH LPAR Expr RPAR LBRACE StmtCase RBRACE        { Switch($3,$6)  }
 ;
 
 StmtU:
@@ -149,6 +152,12 @@ Expr:
     Access                              { Access $1           } //取$1的右值
   | ExprNotAccess                       { $1                  } 
 ;
+
+StmtCase:
+    CASE AtExprNotAccess COLON StmtM               { [Case($2,$4)]    }  
+  | CASE AtExprNotAccess COLON StmtM StmtCase      { Case($2,$4) :: $5}
+;
+
   //非左值的情况
 ExprNotAccess:
     AtExprNotAccess                     { $1                  }
@@ -180,6 +189,7 @@ AtExprNotAccess:
     Const                               { CstI $1             }
   | LPAR ExprNotAccess RPAR             { $2                  } 
   | AMP Access                          { Addr $2             } // 取地址
+  | ConstFloat                         { ConstFloat($1)     }
 ;
 
 Access:    //可以为左值的情况
@@ -207,7 +217,12 @@ Const:
   | NULL                                { -1       }
 ;
 
+ConstFloat:
+    CSTFLOAT                          { $1       }
+  | MINUS CSTFLOAT                    { - $2     }
+
 Type:
     INT                                 { TypI     }
   | CHAR                                { TypC     }
+  | FLOAT                               { TypF     }
 ;

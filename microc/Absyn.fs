@@ -41,6 +41,8 @@ and stmt =
   | Return of expr option            (* Return from method          *)
   | Block of stmtordec list          (* Block: grouping and scope   *)
   | DoWhile of stmt * expr
+  | Case of expr * stmt
+  | Switch of expr * stmt list
   // 语句块内部，可以是变量声明 或语句的列表                                                              
 
 and stmtordec =                                                    
