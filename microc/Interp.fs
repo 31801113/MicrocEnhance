@@ -255,15 +255,6 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
 
         loop store
 
-    | For ( e1,e2,e3,body ) ->
-        let (res , store0) = eval e1 locEnv gloEnv store
-        let rec loop store1 = 
-            let (ifValue, store2) = eval e2 locEnv gloEnv store1
-            if ifValue<>0 then let (oneend ,store3) = eval e3 locEnv gloEnv (exec body locEnv gloEnv store2)
-                               loop store3
-                          else store2
-        loop store0
-        
     | Expr e ->
         // _ 表示丢弃e的值,返回 变更后的环境store1
         let (_, store1) = eval e locEnv gloEnv store
@@ -280,8 +271,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
             | s1 :: sr -> loop sr (stmtordec s1 locEnv gloEnv store)
 
         loop stmts (locEnv, store)
-    | Break -> failwith "break not done"
-    | Continue -> failwith "continue not done"
+
     | Return _ -> failwith "return not implemented" // 解释器没有实现 return
 
 and stmtordec stmtordec locEnv gloEnv store =
@@ -338,6 +328,12 @@ and eval e locEnv gloEnv store : int * store =
             | _ -> failwith ("unknown primitive " + ope)
 
         (res, store2)
+    | Prim3( e1, e2 , e3) ->
+        let (i1, store1) = eval e1 locEnv gloEnv  store
+        let (i2, store2) = eval e2 locEnv gloEnv  store1
+        let (i3, store3) = eval e3 locEnv gloEnv  store2
+        if i1 = 0 then (i2,store3) 
+                      else (i3,store3)  
     | Andalso (e1, e2) ->
         let (i1, store1) as res = eval e1 locEnv gloEnv store
 

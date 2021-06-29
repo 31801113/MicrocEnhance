@@ -136,7 +136,6 @@ type VarEnv = (Var * typ) Env * int
 
 type Paramdecs = (typ * string) list
 type FunEnv = (label * typ option * Paramdecs) Env
-type LabEnv = label list
 
 (* Bind declared variable in varEnv and generate code to allocate it: *)
 
@@ -188,11 +187,6 @@ let makeGlobalEnvs(topdecs : topdec list) : VarEnv * FunEnv * instr list =
    * funEnv  is the global function environment
    * C       is the code that follows the code for stmt
 *)
-let rec headlab labs = 
-    match labs with
-        | lab :: tr -> lab
-        | []        -> failwith "Error: unknown break"
-
 
 let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr list = 
     match stmt with
@@ -206,6 +200,9 @@ let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr 
       let (jumptest, C1) = 
            makeJump (cExpr e varEnv funEnv (IFNZRO labbegin :: C))
       addJump jumptest (Label labbegin :: cStmt body varEnv funEnv C1)
+    | Expr e -> 
+      cExpr e varEnv funEnv (addINCSP -1 C) 
+
     | For(dec, e, opera,body) ->
         let labend   = newLabel()                       //结束label
         let labbegin = newLabel()                       //设置label 
@@ -216,9 +213,6 @@ let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr 
         let C3 = Label labope :: cExpr opera varEnv funEnv (addINCSP -1 C2)
         let C4 = cStmt body varEnv funEnv C3    
         cExpr dec varEnv funEnv (addINCSP -1 (addJump jumptest  (Label labbegin :: C4) ) ) //dec Label: body  opera  testjumpToBegin 指令的顺序
-
-    | Expr e -> 
-      cExpr e varEnv funEnv (addINCSP -1 C) 
 
     | Block stmts -> 
       let rec pass1 stmts ((_, fdepth) as varEnv) =
@@ -239,9 +233,6 @@ let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr 
       RET (snd varEnv - 1) :: deadcode C
     | Return (Some e) -> 
       cExpr e varEnv funEnv (RET (snd varEnv) :: deadcode C)
-    // | Break ->
-    //     let labend = headlab lablist
-    //     addGOTO labend C
 
 and bStmtordec stmtOrDec varEnv : bstmtordec * VarEnv =
     match stmtOrDec with 
@@ -296,6 +287,12 @@ and cExpr (e : expr) (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : inst
             | ">"   -> SWAP :: LT :: C
             | "<="  -> SWAP :: LT :: addNOT C
             | _     -> failwith "unknown primitive 2"))
+
+    | Prim3(cond, e1, e2)    ->
+        let (jumpend, C1) = makeJump C
+        let (labelse, C2) = addLabel (cExpr e2 varEnv funEnv C1)
+        cExpr cond varEnv funEnv (IFZERO labelse :: cExpr e1 varEnv funEnv (addJump jumpend C2))
+     
     | Andalso(e1, e2) ->
       match C with
       | IFZERO lab :: _ ->
