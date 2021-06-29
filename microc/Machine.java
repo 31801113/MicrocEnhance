@@ -39,7 +39,8 @@ class Machine {
     PRINTI = 22, PRINTC = 23, 
     LDARGS = 24,
     STOP = 25,
-    CSTF = 26;
+    CSTF = 26,
+    CSTC = 27;
 
 
   final static int STACKSIZE = 1000;
@@ -92,6 +93,8 @@ class Machine {
         s[sp+1] = new IntType(p[pc++]); sp++; break;
       case CSTF:
         s[sp + 1] = new FloatType(Float.intBitsToFloat(p[pc++])); sp++; break;
+      case CSTC:
+        s[sp+1] =new CharType((char)(p[pc++])); sp++; break;
       case ADD: 
         s[sp-1] = binaryOperator(s[sp-1], s[sp], "+"); sp--; break;
       case SUB: 
@@ -335,6 +338,7 @@ class Machine {
     switch (p[pc]) {
     case CSTI:   return "CSTI " + p[pc+1];
     case CSTF:   return "CSTF " + p[pc+1];
+    case CSTC:   return "CSTC " + p[pc+1];
     case ADD:    return "ADD";
     case SUB:    return "SUB";
     case MUL:    return "MUL";

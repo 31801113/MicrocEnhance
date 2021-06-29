@@ -107,6 +107,10 @@ let rec addCST i C =
 let rec addCSTF i C =
     match (i, C) with
     | _                     -> (CSTF (System.BitConverter.ToInt32((System.BitConverter.GetBytes(float32(i))),0))) :: C
+
+let rec addCSTC i C =
+    match (i, C) with
+    | _                     -> (CSTC ((int32)(System.BitConverter.ToInt16((System.BitConverter.GetBytes(char(i))),0)))) :: C
             
 (* ------------------------------------------------------------------- *)
 
@@ -254,6 +258,7 @@ and cExpr (e : expr) (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : inst
     | Access acc     -> cAccess acc varEnv funEnv (LDI :: C)
     | Assign(acc, e) -> cAccess acc varEnv funEnv (cExpr e varEnv funEnv (STI :: C))
     | CstI i         -> addCST i C
+    | CstC i         -> addCSTC i C
     | ConstFloat i   -> addCSTF i C
     | Addr acc       -> cAccess acc varEnv funEnv C
     | Prim1(ope, e1) ->

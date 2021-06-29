@@ -17,6 +17,7 @@ let nl = CstI 10 //  \n 的 ASCII 码
 %token <int> CSTINT CSTBOOL  // <int> 是词元的语义值类型
 %token <float32> CSTFLOAT
 %token <string> CSTSTRING NAME
+%token <char> CSTCHAR
 
 %token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE DO FLOAT SWITCH CASE
 %token PLUS MINUS TIMES DIV MOD
@@ -187,6 +188,7 @@ AtExprNotAccess:
     // AMP Access  , &x
     // (3)   
     Const                               { CstI $1             }
+  | ConstChar                           { CstC($1)            }
   | LPAR ExprNotAccess RPAR             { $2                  } 
   | AMP Access                          { Addr $2             } // 取地址
   | ConstFloat                         { ConstFloat($1)     }
@@ -216,6 +218,9 @@ Const:
   | MINUS CSTINT                        { - $2     }
   | NULL                                { -1       }
 ;
+
+ConstChar:
+  CSTCHAR                               { $1       }
 
 ConstFloat:
     CSTFLOAT                          { $1       }
