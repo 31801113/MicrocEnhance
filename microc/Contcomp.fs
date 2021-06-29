@@ -103,14 +103,15 @@ let rec addCST i C =
     | (0, IFNZRO lab :: C1) -> C1
     | (_, IFNZRO lab :: C1) -> addGOTO lab C1
     | _                     -> CSTI i :: C
-
-let rec addCSTF i C =
-    match (i, C) with
-    | _                     -> (CSTF (System.BitConverter.ToInt32((System.BitConverter.GetBytes(float32(i))),0))) :: C
             
 (* ------------------------------------------------------------------- *)
 
 (* Simple environment operations *)
+
+let rec addCSTC i C =
+    match (i, C) with
+    | _                     -> (CSTC ((int32)(System.BitConverter.ToInt16((System.BitConverter.GetBytes(char(i))),0)))) :: C
+
 
 type 'data Env = (string * 'data) list
 
@@ -135,6 +136,7 @@ type VarEnv = (Var * typ) Env * int
 
 type Paramdecs = (typ * string) list
 type FunEnv = (label * typ option * Paramdecs) Env
+type LabEnv = label list
 
 (* Bind declared variable in varEnv and generate code to allocate it: *)
 
@@ -186,6 +188,11 @@ let makeGlobalEnvs(topdecs : topdec list) : VarEnv * FunEnv * instr list =
    * funEnv  is the global function environment
    * C       is the code that follows the code for stmt
 *)
+let rec headlab labs = 
+    match labs with
+        | lab :: tr -> lab
+        | []        -> failwith "Error: unknown break"
+
 
 let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr list = 
     match stmt with
@@ -199,13 +206,20 @@ let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr 
       let (jumptest, C1) = 
            makeJump (cExpr e varEnv funEnv (IFNZRO labbegin :: C))
       addJump jumptest (Label labbegin :: cStmt body varEnv funEnv C1)
-    | DoWhile(stmt, expr) ->
-      let labbegin = newLabel()
-      let (jumptest, C1) = 
-           makeJump (cExpr expr varEnv funEnv (IFNZRO labbegin :: C))
-      addJump jumptest (Label labbegin :: cStmt stmt varEnv funEnv C1)
+    | For(dec, e, opera,body) ->
+        let labend   = newLabel()                       //结束label
+        let labbegin = newLabel()                       //设置label 
+        let labope   = newLabel()                       //设置 for(,,opera) 的label
+        let Cend = Label labend :: C
+        let (jumptest, C2) =                                                
+            makeJump (cExpr e varEnv funEnv (IFNZRO labbegin :: Cend)) 
+        let C3 = Label labope :: cExpr opera varEnv funEnv (addINCSP -1 C2)
+        let C4 = cStmt body varEnv funEnv C3    
+        cExpr dec varEnv funEnv (addINCSP -1 (addJump jumptest  (Label labbegin :: C4) ) ) //dec Label: body  opera  testjumpToBegin 指令的顺序
+
     | Expr e -> 
       cExpr e varEnv funEnv (addINCSP -1 C) 
+
     | Block stmts -> 
       let rec pass1 stmts ((_, fdepth) as varEnv) =
           match stmts with 
@@ -225,6 +239,9 @@ let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr 
       RET (snd varEnv - 1) :: deadcode C
     | Return (Some e) -> 
       cExpr e varEnv funEnv (RET (snd varEnv) :: deadcode C)
+    // | Break ->
+    //     let labend = headlab lablist
+    //     addGOTO labend C
 
 and bStmtordec stmtOrDec varEnv : bstmtordec * VarEnv =
     match stmtOrDec with 
@@ -254,7 +271,7 @@ and cExpr (e : expr) (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : inst
     | Access acc     -> cAccess acc varEnv funEnv (LDI :: C)
     | Assign(acc, e) -> cAccess acc varEnv funEnv (cExpr e varEnv funEnv (STI :: C))
     | CstI i         -> addCST i C
-    | ConstFloat i   -> addCSTF i C
+    | CstC i         -> addCSTC i C
     | Addr acc       -> cAccess acc varEnv funEnv C
     | Prim1(ope, e1) ->
       cExpr e1 varEnv funEnv

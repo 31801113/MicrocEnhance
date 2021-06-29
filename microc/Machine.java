@@ -11,7 +11,6 @@
       java Machinetrace <programfile> <arg1> <arg2> ...
 
 */
-
 import java.io.*;
 import java.util.*;
 import java.lang.*;
@@ -20,7 +19,7 @@ import java.util.regex.Pattern;
 
 class Machine {
   public static void main(String[] args)        
-    throws FileNotFoundException, IOException, OperatorError, ImcompatibleTypeError {
+    throws FileNotFoundException, IOException,OperatorError, ImcompatibleTypeError  {
     if (args.length == 0) 
       System.out.println("Usage: java Machine <programfile> <arg1> ...\n");
     else
@@ -38,8 +37,7 @@ class Machine {
     GOTO = 16, IFZERO = 17, IFNZRO = 18, CALL = 19, TCALL = 20, RET = 21, 
     PRINTI = 22, PRINTC = 23, 
     LDARGS = 24,
-    STOP = 25,
-    CSTF = 26;
+    STOP = 25,CSTC = 26;
 
 
   final static int STACKSIZE = 1000;
@@ -47,12 +45,15 @@ class Machine {
   // Read code from file and execute it
 
   static void execute(String[] args, boolean trace) 
-    throws FileNotFoundException, IOException, OperatorError, ImcompatibleTypeError {
+    throws FileNotFoundException, IOException, OperatorError, ImcompatibleTypeError{
     int[] p = readfile(args[0]);                // Read the program from file
+    // int[] s = new int[STACKSIZE];               // The evaluation stack
+    // int[] iargs = new int[args.length-1];
+    // for (int i=1; i<args.length; i++)          // Push commandline arguments
+    //   iargs[i-1] = Integer.parseInt(args[i]);
+
     BaseType[] s = new BaseType[STACKSIZE];               // The evaluation stack
     BaseType[] iargs = new BaseType[args.length-1];
-    //for (int i=1; i<args.length; i++)           // Push commandline arguments
-    //  iargs[i-1] = Integer.parseInt(args[i]);
 
     for (int i = 1; i < args.length; i++) {
             if(Pattern.compile("(?i)[a-z]").matcher(args[i]).find()){
@@ -89,9 +90,9 @@ class Machine {
         printsppc(s, bp, sp, p, pc);
       switch (p[pc++]) {
       case CSTI:
-        s[sp+1] = new IntType(p[pc++]); sp++; break;
-      case CSTF:
-        s[sp + 1] = new FloatType(Float.intBitsToFloat(p[pc++])); sp++; break;
+       s[sp+1] = new IntType(p[pc++]); sp++; break;
+      case CSTC:
+        s[sp+1] =new CharType((char)(p[pc++])); sp++; break;
       case ADD: 
         s[sp-1] = binaryOperator(s[sp-1], s[sp], "+"); sp--; break;
       case SUB: 
@@ -221,7 +222,7 @@ class Machine {
       }
     }
   }
-
+  
   public static BaseType binaryOperator(BaseType lhs, BaseType rhs, String operator) throws ImcompatibleTypeError, OperatorError {
         Object left;
         Object right;
@@ -333,8 +334,8 @@ class Machine {
 
   static String insname(int[] p, int pc) {
     switch (p[pc]) {
-    case CSTI:   return "CSTI " + p[pc+1];
-    case CSTF:   return "CSTF " + p[pc+1];
+    case CSTI:   return "CSTI " + p[pc+1]; 
+    case CSTC:   return "CSTC " + (char)(p[pc+1]); 
     case ADD:    return "ADD";
     case SUB:    return "SUB";
     case MUL:    return "MUL";
@@ -383,9 +384,10 @@ class Machine {
         System.out.println("{" + pc + ": " + insname(p, pc) + "}");
   }
 
+
   // Read instructions from a file
 
-  public static int[] readfile(String filename)
+  public static int[] readfile(String filename) 
     throws FileNotFoundException, IOException
   {
     ArrayList<Integer> rawprogram = new ArrayList<Integer>();
